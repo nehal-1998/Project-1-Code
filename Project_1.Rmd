@@ -1,13 +1,13 @@
 ---
 title: "Project_1"
-author: "Anandu Muralidharan; Nehal UR Rahman; Karanjeet Singh Sihra"
+author: "Nehal UR Rahman"
 date: "2023-02-13"
 output:
   word_document: default
 ---
-# Anandu Muralidharan - 991713040
+
 # Nehal UR Rahman - 991691259
-# Karanjeet Singh Sihra - 991705289
+
 ```{r}
 library(sets)
 library(ggplot2)
