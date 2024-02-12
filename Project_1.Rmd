@@ -1,0 +1,289 @@
+---
+title: "Project_1"
+author: "Anandu Muralidharan; Nehal UR Rahman; Karanjeet Singh Sihra"
+date: "2023-02-13"
+output:
+  word_document: default
+---
+# Anandu Muralidharan - 991713040
+# Nehal UR Rahman - 991691259
+# Karanjeet Singh Sihra - 991705289
+```{r}
+library(sets)
+library(ggplot2)
+library(tidyverse)
+library(ISLR)
+library(moments)
+library(dplyr) 
+```
+## Introduction
+In this data set we are trying to analyze the Killed or Survived Data set which tells us about deaths or survivors in road accidents over the span of years while giving us information of the accident type, location, district and much more.
+We have four such data over the years 2015, 2016, 2017, 2018.
+The data is majorly categorical with lot of “<Null>” values.
+```{r}
+df1 <- read.csv("2015_KSI.csv")
+df2 <- read.csv("2016_KSI.csv")
+df3 <- read.csv("2017_KSI.csv")
+df4 <- read.csv("2018_KSI.csv")
+
+colnames1 <- colnames(df1)
+colnames2 <- colnames(df2)
+colnames3 <- colnames(df3)
+colnames4 <- colnames(df4)
+```
+
+## Q1
+This is a simple function which takes four dataframes as parameters and then prints out the similarity index of each dataframe with each other.
+This function has made our life much simpler in the aspect that this set of code needs to be repeated to check the similarity index later after doing our task of merging the data.
+
+```{r}
+check_similarity <- function(df1, df2, df3, df4) {
+  colnames1 <- colnames(df1)
+  colnames2 <- colnames(df2)
+  colnames3 <- colnames(df3)
+  colnames4 <- colnames(df4)
+  identical_colnames1_2 <- all(colnames1 == colnames2)
+  identical_colnames1_3 <- all(colnames1 == colnames3)
+  identical_colnames1_4 <- all(colnames1 == colnames4)
+  identical_colnames2_3 <- all(colnames1 == colnames4)
+  identical_colnames2_4 <- all(colnames1 == colnames4)
+  identical_colnames3_4 <- all(colnames3 == colnames4)
+  cat("Are the columns in df1 and df2 identical? ", identical_colnames1_2, "\n")
+  cat("Are the columns in df1 and df3 identical? ", identical_colnames1_3, "\n")
+  cat("Are the columns in df1 and df4 identical? ", identical_colnames1_4, "\n")
+  cat("Are the columns in df2 and df3 identical? ", identical_colnames2_3, "\n")
+  cat("Are the columns in df2 and df3 identical? ", identical_colnames2_4, "\n")
+  cat("Are the columns in df3 and df4 identical? ", identical_colnames3_4, "\n")
+}
+```
+
+Here you can see that the dataframes df1, df2, and df3 have a few columns that are not identical, but df3 and df4 and identical among themselves.
+Since we have to merge the data of the four dataframes, we can simply work towards making the columns of df1, df2 and df3 similar.
+```{r}
+check_similarity(df1, df2, df3, df4)
+```
+In this chunk we are trying to find out what are the columns which are different from each other, in the dataframes df1 - df3.
+```{r}
+diff_colnames1_2 <- setdiff(colnames1, colnames2)
+diff_colnames2_1 <- setdiff(colnames2, colnames1)
+
+diff_colnames1_3 <- setdiff(colnames1, colnames3)
+diff_colnames3_1 <- setdiff(colnames3, colnames1)
+
+diff_colnames2_3 <- setdiff(colnames2, colnames3)
+diff_colnames3_2 <- setdiff(colnames3, colnames2)
+
+# Print the differences
+cat("Columns in df1 but not in df2: ", diff_colnames1_2, "\n")
+cat("Columns in df2 but not in df1: ", diff_colnames2_1, "\n")
+cat("cols df1 ", ncol(df1), "\n")
+cat("cols df2", ncol(df2), "\n")
+print("-----------------")
+cat("Columns in df1 but not in df3: ", diff_colnames1_3, "\n")
+cat("Columns in df3 but not in df1: ", diff_colnames3_1, "\n")
+cat("cols df1", ncol(df1), "\n")
+cat("cols df3", ncol(df3), "\n")
+print("-----------------")
+cat("Columns in df2 but not in df3: ", diff_colnames2_3, "\n")
+cat("Columns in df3 but not in df2: ", diff_colnames3_2, "\n")
+cat("cols df2", ncol(df2), "\n")
+cat("cols df3", ncol(df3), "\n")
+```
+We found out here that the Neighbourhood and Vehicles in street are the two columns which have been spelt wrong and hence causing us the issue. The evidence for the fact that issue is happening only because column names are spelt wrong is because the number of column are pretty much the same. On further analysis the data that the columns are containing is also the same.
+
+So here we just need to rename them 
+
+```{r}
+colnames(df1)[which(colnames(df1) == "VEHICLES_IN_STREET")] <- "VEHICLE_IN_STREET"
+colnames(df2)[which(colnames(df2) == "VEHICLE_STREET")] <- "VEHICLE_IN_STREET"
+colnames(df2)[which(colnames(df2) == "NEIGHBOUR")] <- "NEIGHBOURHOOD"
+```
+
+Calling the function to check similarity.
+```{r}
+check_similarity(df1, df2, df3, df4)
+```
+Combining the four dataframes
+```{r}
+df_combined <- rbind(df1, df2, df3, df4)
+cat("rows ",nrow(df_combined),"\n")
+cat("cols", ncol(df_combined))
+```
+
+Distinct column names
+```{r}
+colnames(df_combined)
+```
+Taking out the columns YEAR, VEHICLE_IN_STREET, DISTRICT, NEIGHBOURHOOD to make dataframe for first question.
+
+```{r}
+df_q1 <- df_combined[c("YEAR", "VEHICLE_IN_STREET", "DISTRICT", "NEIGHBOURHOOD")]
+str(df_q1)
+```
+Here one thing you observe is that the neighborhood column has name of some neighbourhood and a number inside the parentheses.
+On further investigation it can be seen that the number matches the value in column Vehicle_In_Street
+hence we will try and removing that portion from Nehighbourhood column
+```{r}
+df_q1$NEIGHBOURHOOD <- str_trim(sub("\\(.*", "", df_q1$NEIGHBOURHOOD))
+#Here we are making use of sub function to take anything a "space followed by an open parentheses and any number followed after", this portion is replaced by empty space, which can then be trimmed using the str_trim function.
+```
+
+```{r}
+nrow(df_q1)
+```
+Unique year -> shows we have merged all four years
+```{r}
+unique(df_q1$YEAR)
+```
+Unique Vehicle in street
+```{r}
+unique(df_q1$VEHICLE_IN_STREET)
+
+```
+Unique Neighbourhood
+```{r}
+unique(df_q1$NEIGHBOURHOOD)
+
+```
+Unique District <- even though this data has <Null> value in it, since the coulmn doesn't particularly affect the data we are trying to analyze we can leave it be
+```{r}
+unique(df_q1$DISTRICT)
+```
+The exploration at this point which we are trying to do is to have a count per neighbourhood of people who were either killed or injured. Since there is no particular column in the whole dataset which has the "number" of people either killed or injured what we do is we make use of Injury column to determine who were not particulary injured or the None class and remove that.
+
+In order to reach that point however we had to get rid of Districts which did not have "Tor" in it.
+```{r}
+tor_rows <- df_combined[grepl("tor", df_combined$DISTRICT, ignore.case = TRUE), ]
+
+tor_rows_no_none <- filter(tor_rows, tor_rows$INJURY != "None")
+
+tor_rows_no_none$NEIGHBOURHOOD <- str_trim(sub("\\(.*", "", tor_rows_no_none$NEIGHBOURHOOD))
+
+neighbourhood_count <- table(tor_rows_no_none$NEIGHBOURHOOD)
+
+neighbourhood_count_df <- as.data.frame(neighbourhood_count, responseName = "count")
+names(neighbourhood_count_df) <- c("Neighbourhood", "count")
+neighbourhood_count_df
+```
+In this plot we understand that "Waterfront Communities - The Island" is a neighbourhood which is most prone to accidents.
+
+```{r}
+ggplot(neighbourhood_count_df, aes(x = Neighbourhood, y = count)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(x = "Neighbourhood", y = "Number of people killed or injured", title = "Counts of Unique Neighbourhood cases")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
+
+## Q2
+The sequence of code below provides us the total number(sum) of vehicles in each district during the accident.
+```{r}
+unique(df_q1$DISTRICT)
+```
+As we see above there are 6 unique neighborhoods in the given dataset.
+```{r}
+#We have used the subset function to get the data for only those districts which has Null values
+subset(df_q1, DISTRICT == "<Null>")
+```
+As shown in the table above, there are 6 rows that contains Null values in the district column. For now We will be keeping these values as it is and then cleaning them, when we will be visualizing the data.
+```{r}
+subset(df_q1, DISTRICT == "<Null>")
+```
+Now we use the function tapply to show the sum of vehicles in street during the accident in each district by grouping them based on district.
+```{r}
+#This is done by creating another data frame called df_q2. To get the total number of vehicles in street with respect to the neighborhood we use the tapply function.
+df_q2 <- as.data.frame(tapply(df_q1$VEHICLE_IN_STREET, df_q1$DISTRICT, FUN = sum))
+#We name the total number of vehicles in the street during the accident as "count"
+names(df_q2) <- c( "count")
+df_q2
+```
+We can see that the total number of vehicle in the street during the accident is the highest in Scarborough followed by Toronto and East York.
+
+
+##Q3
+Here, we are Calculating the average mean of vehicles in street in each district during accidents.To find the top 5 neighborhoods with the highest number of vehicles in the street we need first to see the average.
+```{r}
+#The central tendency measure "MEAN" is the average value for a given set of data.
+# Using tapply we can group the "VEHICLES_IN_STREET" based on neighborhood values, after which we can find the mean of each of these values per group.This data will further be used to make the table. 
+avg_per_hood <- tapply(df_q1$VEHICLE_IN_STREET, df_q1$NEIGHBOURHOOD, FUN = mean)
+# using sort function to arrange top Average vehicles in order.
+avg_per_hood_sort <- sort(avg_per_hood, decreasing = TRUE)
+#Selecting the top five rows of the sorted data
+df_q3 <- as.data.frame(avg_per_hood_sort[1:5])
+# Here we are Changing column name to count
+names(df_q3) <- c( "count")
+df_q3
+```
+Here we can realize that the highest number of average vehicle on street is for Guildwood Neighbourhood. Followed by Scarborough Village and Eglington East.
+
+##DATA ANALYSIS
+To begin our data exploration and data visulization, we create another dataframe called df_analyze. 
+In this dataset we only include those atrributes or columns that we feel are important to analyze the data. We do this to get the required visualizations.
+```{r}
+colnames(df_combined)
+df_analyze <- df_combined[c("HOUR","ROAD_CLASS", "DISTRICT", "LOCCOORD", "ACCLOC", "TRAFFCTL", "VISIBILITY", "LIGHT", "RDSFCOND", "ACCLASS", "INJURY", "SPEEDING", "REDLIGHT", "ALCOHOL", "NEIGHBOURHOOD", "VEHICLE_IN_STREET")]
+str(df_analyze)
+```
+As we can see above, we have included 16 variables from the 58 variables of the original merged dataset. Using these 16 variables we will be providing the data visualizations.
+
+## Finding count of null in district and Neighbourhood
+```{r}
+cat("Number of null in district ", sum(df_analyze$DISTRICT == "<Null>"), "\n")
+cat("Number of null in Neighbourhood ", sum(df_analyze$NEIGHBOURHOOD == "<Null>"), "\n")
+```
+#As seen in the above output, we can see that there are 6 null values present in the district column and there are 0 null values in the neighborhood column.
+#Therefore, We can either find out the values of these 6 positions by analyzing the supporting columns from df_combine or we can simple drop the 6 rows. #Hence, for time being we will drop the rows so as to refine the data.
+
+```{r}
+df_analyze <- subset(df_analyze, DISTRICT != "<Null>")
+#Using this line of code we drop the rows containing null in the district column
+cat("Number of null in district ", sum(df_analyze$DISTRICT == "<Null>"), "\n")
+#We check the number of null values in district again to make sure that the null value rows are dropped
+```
+#We can see now that 6 rows have been removed as there are 0 null values in the district column.
+
+#Now we will try to understand the spread of accidents over time in a duration of 24 hours.
+```{r}
+hist(df_analyze$HOUR, xlab = "Frequenecy of accidents wrt to Hour", 
+     main="Histogram of total number of accidents wrt to Hour",
+     col="orange", breaks = 20)
+```
+Here we can observe most cases have been registered between 1500 or 3PM in the afternoon to around 8PM in the evening. Also Early morning 12AM accidents have peaked.
+
+
+
+```{r}
+tapply(df_analyze$HOUR, df_analyze$DISTRICT, FUN = mean)
+```
+This here we understand that in most districts that are present in the dataset, most accidents happen around the afternoon time, except for in Toronto East York where most accidents tend to happen in the morning.
+
+```{r}
+cat("Before: \n unique values in speeding", unique(df_analyze$SPEEDING), "\n")
+#converting the null values to no
+df_analyze$SPEEDING <- gsub("<Null>", "No", df_analyze$SPEEDING)
+cat("After: \n unique values in speeding", unique(df_analyze$SPEEDING))
+```
+
+```{r}
+#using factor function to convert it into levels "Yes" and "No"
+#This function will help give "yes" and "no" levels which eventually will make R Realize that the data is ordinal in the speeding column
+df_analyze$SPEEDING <- factor(df_analyze$SPEEDING, levels = c("Yes", "No"), ordered= TRUE)
+summary(df_analyze$SPEEDING)
+```
+Here we can understand that majority of the accident cases have not been due to speeding, the other suspects now will be Influence of Alcohol, or Disability can be the reason for accidents.
+
+#Here, we are drawing Side by Side Boxplot of Hour and Speeding
+```{r}
+boxplot(HOUR ~ SPEEDING, data = df_analyze)
+```
+People on average when speeding tend to get into accidents at around 1PM in the afternoon, how not speeding 4PM. 
+
+## Conclusion
+After merging the data of the four years we have concluded the following things:
+ . Waterfront Communities - The Island is one of the most accident-prone neighborhoods in Toronto.
+ . The total number of vehicles in the street during the accident is the highest in Scarborough followed by Toronto and East York.
+ . Guildwood Neighbourhood has the highest average number of vehicles in street.
+ . The frequency of Accidents is high between 3 PM - 8 PM and then again spikes towards 12 AM at midnight.
+ . Speeding alone is not a major reason for the accidents that happen in Canada.
+
+
